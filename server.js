@@ -1,48 +1,43 @@
 const WebSocket = require('ws');
 
-const server = new WebSocket.Server({ port: 8080 });
+const wss = new WebSocket.Server({ port: 8080 });
+let secretNumber = generateNumber();
 
-let secretNumber = Math.floor(Math.random() * 100) + 1;
-let players = [];
+function generateNumber() {
+  return Math.floor(Math.random() * 100) + 1;
+}
 
-console.log("🎮 Serveur WebSocket démarré sur ws://localhost:8080");
-console.log(`🤫 Nombre secret généré : ${secretNumber}`);
+function broadcast(data) {
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(data));
+    }
+  });
+}
 
-server.on('connection', socket => {
-    console.log("👤 Un joueur s'est connecté !");
-    players.push(socket);
+wss.on('connection', (ws) => {
+  ws.on('message', (message) => {
+    const data = JSON.parse(message);
+    
+    if (data.type === 'guess') {
+      if (data.number === secretNumber) {
+        broadcast({
+          type: 'win',
+          winner: data.player,
+        });
 
-    socket.on('message', message => {
-        let data = JSON.parse(message);
-        if (data.type === "guess") {
-            let guess = parseInt(data.number);
-            let response = { type: "hint" };
+        // 🔁 Nouveau nombre secret
+        secretNumber = generateNumber();
 
-            if (guess === secretNumber) {
-                response = { type: "win", winner: data.player };
-                console.log(`🏆 Le joueur ${data.player} a trouvé le bon nombre : ${secretNumber}`);
-                
-                // Envoyer le message de victoire à tous les joueurs
-                players.forEach(player => {
-                    player.send(JSON.stringify(response));
-                });
-
-                // Générer un nouveau nombre pour la prochaine partie
-                secretNumber = Math.floor(Math.random() * 100) + 1;
-                console.log(`🔄 Nouveau nombre secret généré : ${secretNumber}`);
-            } else if (guess < secretNumber) {
-                response.message = "🔼 Trop petit ! Essayez un nombre plus grand.";
-            } else {
-                response.message = "🔽 Trop grand ! Essayez un nombre plus petit.";
-            }
-
-            // Envoyer la réponse uniquement au joueur qui a deviné
-            socket.send(JSON.stringify(response));
-        }
-    });
-
-    socket.on('close', () => {
-        players = players.filter(p => p !== socket);
-        console.log("❌ Un joueur s'est déconnecté.");
-    });
+        // Informer les joueurs que la partie recommence
+        broadcast({ type: 'new_game' });
+      } else {
+        const hint = data.number < secretNumber ? 'Trop petit' : 'Trop grand';
+        ws.send(JSON.stringify({
+          type: 'hint',
+          message: hint,
+        }));
+      }
+    }
+  });
 });
