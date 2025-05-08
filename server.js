@@ -6,7 +6,7 @@ const server = new WebSocket.Server({ port: 8080 });//Crée un server qui écout
 let secretNumber = Math.floor(Math.random() * 100) + 1;//génère un nombre secret entre 1 et 100
 let players = [];//renger les utilisateurs connectés dans un tableau
 
-console.log("🎮 Serveur WebSocket démarré sur ws://localhost:8080");
+console.log("🎮 Serveur WebSocket démarré sur ws://localhost:8080");  //Lorsque le server est déployé :  wss://gamebackend-render.onrender.com
 console.log(`🤫 Nombre secret généré : ${secretNumber}`);
 
 server.on('connection', socket => { //Lorsqu'un client se connecte
@@ -27,6 +27,18 @@ server.on('connection', socket => { //Lorsqu'un client se connecte
                 players.forEach(player => {
                     player.send(JSON.stringify(response));
                 });
+
+
+                 // Attendre 1 seconde avant d'envoyer new_game
+    setTimeout(() => {
+        secretNumber = Math.floor(Math.random() * 100) + 1;
+        console.log(`🔄 Nouveau nombre secret généré : ${secretNumber}`);
+
+        players.forEach(player => {
+            player.send(JSON.stringify({ type: "new_game" }));
+        });
+    }, 10000); // 1000 ms = 1 seconde
+}
 
                 // Générer un nouveau nombre pour la prochaine partie
                 secretNumber = Math.floor(Math.random() * 100) + 1;
