@@ -5,7 +5,7 @@ const server = new WebSocket.Server({ port: 8080 }); // Création du serveur Web
 let secretNumber = Math.floor(Math.random() * 100) + 1; // Nombre secret initial entre 1 et 100
 let players = []; // Liste des sockets des joueurs connectés
 
-console.log("🎮 Serveur WebSocket démarré sur ws://localhost:8080");
+console.log("🎮 Serveur WebSocket démarré sur ws://gamebackend-render.onrender.com");
 console.log(`🤫 Nombre secret généré : ${secretNumber}`);
 
 server.on('connection', socket => {
