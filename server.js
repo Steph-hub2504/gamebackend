@@ -1,16 +1,23 @@
-const WebSocket = require('ws'); // Importation de la bibliothèque WebSocket
+ const WebSocket = require('ws');
 
-const server = new WebSocket.Server({ port: 8080 }); // Création du serveur WebSocket sur le port 8080
+const server = new WebSocket.Server({ port: 8080 });
+let secretNumber = Math.floor(Math.random() * 100) + 1;
+let players = [];
 
-let secretNumber = Math.floor(Math.random() * 100) + 1; // Nombre secret initial entre 1 et 100
-let players = []; // Liste des sockets des joueurs connectés
+console.log("🎮 Serveur WebSocket démarré");
+console.log(`🤫 Nombre secret : ${secretNumber}`);
 
-console.log("🎮 Serveur WebSocket démarré sur ws://gamebackend-render.onrender.com");
-console.log(`🤫 Nombre secret généré : ${secretNumber}`);
+function broadcast(data) {
+    players.forEach(player => {
+        if (player.readyState === WebSocket.OPEN) {
+            player.send(JSON.stringify(data));
+        }
+    });
+}
 
 server.on('connection', socket => {
     console.log("👤 Un joueur s'est connecté !");
-    players.push(socket); // Ajouter le joueur à la liste
+    players.push(socket);
 
     socket.on('message', message => {
         let data = JSON.parse(message);
@@ -21,27 +28,29 @@ server.on('connection', socket => {
 
             if (guess === secretNumber) {
                 response = { type: "win", winner: data.player };
-                console.log(`🏆 Le joueur ${data.player} a trouvé le bon nombre : ${secretNumber}`);
+                console.log(`🏆 Le joueur ${data.player} a gagné avec ${secretNumber}`);
 
-                // Envoyer le message de victoire à tous les joueurs
-                players.forEach(player => {
-                    player.send(JSON.stringify(response));
-                });
+                broadcast(response);
 
-                // Attendre 10 secondes avant de lancer une nouvelle partie
+                const now = Date.now();
+                const delay = 10000;
+                const startAt = now + delay;
+
                 setTimeout(() => {
                     secretNumber = Math.floor(Math.random() * 100) + 1;
-                    console.log(`🔄 Nouveau nombre secret généré : ${secretNumber}`);
+                    console.log(`🔄 Nouveau nombre : ${secretNumber}`);
 
-                    players.forEach(player => {
-                        player.send(JSON.stringify({ type: "new_game" }));
+                    broadcast({
+                        type: "new_game",
+                        startAt: startAt,
+                        serverTime: now
                     });
-                }, 10000); // 10 secondes de pause
+                }, delay);
             } else if (guess < secretNumber) {
-                response.message = "🔼 Trop petit ! Essayez un nombre plus grand.";
+                response.message = "🔼 Trop petit !";
                 socket.send(JSON.stringify(response));
             } else {
-                response.message = "🔽 Trop grand ! Essayez un nombre plus petit.";
+                response.message = "🔽 Trop grand !";
                 socket.send(JSON.stringify(response));
             }
         }
