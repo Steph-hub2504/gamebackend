@@ -4,8 +4,8 @@ const express = require('express');
 const http = require('http');
 const app = express();
 
-// 🔐 Charge ta clé privée Firebase
-const serviceAccount = require('./guessdatabase-firebase-adminsdk-fbsvc-df07ed3de7.json');
+// 🔐 Charge la clé privée Firebase depuis une variable d'environnement
+const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
