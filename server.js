@@ -4,8 +4,17 @@ const express = require('express');
 const http = require('http');
 const app = express();
 
-// 🔐 Charge la clé privée Firebase depuis une variable d'environnement
-const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+// 🔐 Sécuriser le chargement du JSON des identifiants Firebase
+let serviceAccount;
+try {
+  if (!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+    throw new Error("La variable d'environnement GOOGLE_APPLICATION_CREDENTIALS_JSON est absente.");
+  }
+  serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+} catch (error) {
+  console.error("❌ Erreur lors du chargement de la configuration Firebase :", error.message);
+  process.exit(1); // Quitte proprement l'application
+}
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
@@ -29,7 +38,6 @@ function broadcast(data) {
   });
 }
 
-// 🔁 Met à jour Firestore avec un statut
 async function updateGameStatus(status) {
   try {
     await firestore.collection("game_state_50").doc("statut").set({
@@ -60,7 +68,7 @@ wss.on('connection', socket => {
         await updateGameStatus("enattente");
         broadcast(response);
 
-        const delay = 10000; // 10 secondes avant nouvelle partie
+        const delay = 10000;
         const now = Date.now();
         const startAt = now + delay;
 
