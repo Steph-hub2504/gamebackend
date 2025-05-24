@@ -40,7 +40,7 @@ function broadcast(data) {
 
 async function updateGameStatus(status) {
   try {
-    await firestore.collection("game_state_50").doc("statut").set({
+    await firestore.collection("statut_50").doc("statut").set({
       valeur_statut: status
     }, { merge: true });
     console.log(`📝 Firestore mis à jour : statut = ${status}`);
